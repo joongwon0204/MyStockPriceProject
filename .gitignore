@@ -1,0 +1,12 @@
+# data
+data/
+*.parquet
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# misc
+.DS_Store
