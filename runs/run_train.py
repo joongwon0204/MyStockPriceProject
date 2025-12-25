@@ -1,11 +1,18 @@
 import torch
 from torch.utils.data import DataLoader
+import numpy as np
 
 from src.datasets.StockDataset import StockDataset
 from src.models.StockPredictor import StockPredictor
 from src.train.trainer import train_one_epoch, eval_one_epoch
 
 DATA_DIR = "./data/raw"
+
+def label_mean(ds, n=5000):
+    n = min(n, len(ds))
+    idx = np.random.choice(len(ds), size=n, replace=False)
+    ys = [ds[i][1].item() for i in idx]
+    return float(np.mean(ys))
 
 def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -34,12 +41,17 @@ def main():
         "NEE", "CEG", "SO", "DUK",
     ]
 
-    train_ds = StockDataset(DATA_DIR, tickers, L=500, K=20, stride=5,
+    train_ds = StockDataset(DATA_DIR, tickers, L=500, K=5, stride=20,
                             start_date="2000-01-01", end_date="2018-12-31")
-    val_ds   = StockDataset(DATA_DIR, tickers, L=500, K=20, stride=5,
+    val_ds   = StockDataset(DATA_DIR, tickers, L=500, K=5, stride=20,
                             start_date="2019-01-01", end_date="2022-12-31")
     train_dl = DataLoader(train_ds, batch_size=64, shuffle=True, num_workers=0)
     val_dl   = DataLoader(val_ds, batch_size=64, shuffle=False, num_workers=0)
+
+    p_tr = label_mean(train_ds)
+    p_va = label_mean(val_ds)
+    print("train y mean:", p_tr, "baseline(all-1):", p_tr, "baseline(all-0):", 1-p_tr)
+    print("val   y mean:", p_va, "baseline(all-1):", p_va, "baseline(all-0):", 1-p_va)
 
     model = StockPredictor().to(device)
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)

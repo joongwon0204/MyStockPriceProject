@@ -19,9 +19,9 @@ class StockPredictor(nn.Module):
             nn.Conv1d(conv_size, conv_size, k, padding=k//2) for k in kernels
         ])
         self.mix2 = nn.Conv1d(conv_size * len(kernels), conv_size, 1)
-        self.drop2 = nn.Dropout(0.3)
 
         self.rnn = nn.GRU(input_size=conv_size, hidden_size=rnn_size, batch_first=True)
+        self.drop2 = nn.Dropout(0.3)
         self.fc = nn.Linear(rnn_size, 1)
 
     def forward(self, x): # (B, C, L)
@@ -35,6 +35,6 @@ class StockPredictor(nn.Module):
 
         z = z.permute(0, 2, 1)        # (B, L, conv_size)
         out, _ = self.rnn(z)
-        last = out[:, -1, :]          # (B, rnn_size)
+        last = self.drop2(out[:, -1, :]) # (B, rnn_size)
         logits = self.fc(last).squeeze(-1)  # (B,)
         return logits
